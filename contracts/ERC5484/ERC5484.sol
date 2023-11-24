@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.20;
 
-import "./ERC721/ERC721.sol";
-import "./interfaces/IERC5484.sol";
+import "../ERC721/ERC721.sol";
+import "./IERC5484.sol";
 
 // OpenZeppelin Contracts (v5.0.0)
 // OwnerOnly : 소각권리가 Owner 있는것 가정.
@@ -37,7 +37,6 @@ abstract contract ERC5484 is ERC721, IERC5484 {
     /// @param tokenId The ID of the token
     /// @param spender _msgSender()
     modifier _checkBurnAuth(uint tokenId, address spender) virtual {
-        require(burnAuthState[tokenId] != BurnAuth.Neither, "Invaild burn state");
         require(spender == _ownerOf(tokenId), "Invaild User");
         _;
     }
