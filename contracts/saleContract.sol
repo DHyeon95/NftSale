@@ -1,38 +1,69 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "./ISBTContract.sol";
-import './access/Ownable.sol';
+import "./interfaces/ISBTContract.sol";
+import "./interfaces/ISBTPriceContract.sol";
+import "./interfaces/IERC20.sol";
+import "./access/Ownable.sol";
+import "./utils/math/Math.sol";
+
 
 contract saleContract is Ownable {
+    using Math for uint256;
 
-    ISBTContract sbtContract ;
-    bool private killswitch = false ;
-    address USDCContract ;
+    ISBTContract private tokenContract;
+    ISBTPriceContract private priceContract;
+    IERC20 private stableContract = IERC20(0x28661511CDA7119B2185c647F23106a637CC074f);
+    bool private killswitch = false;
 
-    modifier checkSwitch() {
+    constructor() Ownable(_msgSender()) {
+    }
+
+     modifier checkSwitch() {
         require(killswitch == false, "Contract stopped");
-        _ ;
+        _;
     }
 
     function setSwitch(bool _input) external onlyOwner() {
-        killswitch = _input ;
+        killswitch = _input;
     }
 
-    function setContract(address _contract) external onlyOwner() {
-        sbtContract = ISBTContract( _contract ) ;
+    function setSBTContract(address _contract) external onlyOwner() {
+        tokenContract = ISBTContract(_contract);
     }
 
-    function BuySBTUSDC() public {
-        uint256 price = MockingFunction_GetSBTPriceUSDC();
-        USDCContract.trasferFrom(msg.sender, address(this) , price);
-        sbtContract.testMint(msg.sender);
+    function withdraw(uint256 _amount) external onlyOwner() {
+        require(address(this).balance >= _amount, "Insufficient contract balance for withdrawal");
+        payable(owner()).transfer(_amount);   
     }
 
-    function BuySBTBFC() public payable { // BFC : native token
-        uint256 price = MockingFunction_GetBFCPriceUSDC();
+    function withdrawUSDC(uint256 _amount) external onlyOwner() {
+        stableContract.transfer(owner(), _amount); // decimals 처리해야함
+    }
+
+    function setPriceContract(address _contract) external onlyOwner() {
+        priceContract = ISBTPriceContract(_contract);
+    }
+
+    function BuySBTUSDC() external checkSwitch() {
+        uint256 price = priceContract.getPrice(); // decimals 처리해야함
+        stableContract.transferFrom(msg.sender, address(this) , price);
+        tokenContract.testMint(msg.sender);
+    }
+
+    function BuySBTBFC() external payable checkSwitch() { // BFC : native token
+        uint256 price = _SBTPriceBFC();
         require(msg.value == price, "Invalid Price");
-        sbtContract.testMint(msg.sender);
+        tokenContract.testMint(msg.sender);
+    }
+
+    // 가격 연산 함수 view
+    function _SBTPriceBFC() internal view returns(uint256) {
+        (uint256 amount, uint256 Ratio) = priceContract.getBFCUSDCRatio();
+        uint256 price = priceContract.getPrice();
+        // 멀티콜? 혹은 priceContract의 한 함수에 다 넣기
+        uint256 returnPrice = price * amount.mulDiv(10 ** 18, 10 ** Ratio);
+        return returnPrice;
     }
 
 }
