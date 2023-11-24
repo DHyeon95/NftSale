@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import './ERC5484.sol';
-import './access/Ownable.sol';
-import './ISBTContract.sol';
+import "./ERC5484.sol";
+import "./access/Ownable.sol";
+import "./interfaces/ISBTContract.sol";
 
 contract SBTContract is ERC5484, Ownable, ISBTContract {
 
