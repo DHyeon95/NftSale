@@ -5,4 +5,11 @@ require("hardhat-tracer");
 
 module.exports = {
   solidity: "0.8.20",
+  networks: {
+    hardhat: {
+      forking: {
+        url: "https://public-01.testnet.thebifrost.io/rpc",
+      }
+    }
+  }
 };
