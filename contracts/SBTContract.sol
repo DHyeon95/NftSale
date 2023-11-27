@@ -8,7 +8,7 @@ import "./interfaces/ISBTContract.sol";
 
 contract SBTContract is ERC5484, Ownable, ISBTContract {
 
-    uint public count = 0;
+    uint256 public count = 0;
     address public seller;
 
     constructor(string memory name, string memory symbol) ERC721(name, symbol) Ownable(_msgSender()) {}

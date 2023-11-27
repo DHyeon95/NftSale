@@ -7,7 +7,6 @@ import "./interfaces/IERC20.sol";
 import "./access/Ownable.sol";
 import "./utils/math/Math.sol";
 
-
 contract saleContract is Ownable {
     using Math for uint256;
 
@@ -47,7 +46,7 @@ contract saleContract is Ownable {
     }
 
     function BuySBTUSDC() external checkSwitch() {
-        uint256 price = priceContract.getPrice() * USDCDecimals;
+        uint256 price = priceContract.getPrice();
         stableContract.transferFrom(_msgSender(), address(this), price);
         tokenContract.mintSBT(_msgSender());
     }
@@ -61,7 +60,7 @@ contract saleContract is Ownable {
     function _SBTPriceBFC() internal view returns(uint256) {
         uint256 Ratio = priceContract.getBFCUSDCRatio();
         uint256 price = priceContract.getPrice();
-        return price * Ratio;
+        return price.mulDiv(Ratio, USDCDecimals);
     }
 
 }
