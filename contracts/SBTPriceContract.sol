@@ -23,7 +23,8 @@ contract SBTPriceContract is ISBTPriceContract, Ownable{
         SBTPrice = _input;
     }
 
-    function getPrice() external view returns(uint256) { // saleContract
+    // saleContract 에서 호출하기 위함
+    function getPrice() external view returns(uint256) {
         return SBTPrice;
     }
 
