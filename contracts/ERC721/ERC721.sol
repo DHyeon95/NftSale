@@ -3,9 +3,9 @@
 
 pragma solidity ^0.8.20;
 
-import {IERC721} from "./IERC721.sol";
-import {IERC721Receiver} from "./IERC721Receiver.sol";
-import {IERC721Metadata} from "./extensions/IERC721Metadata.sol";
+import {IERC721} from "../interfaces/IERC721.sol";
+import {IERC721Receiver} from "../interfaces/IERC721Receiver.sol";
+import {IERC721Metadata} from "../interfaces/IERC721Metadata.sol";
 import {Context} from "../utils/Context.sol";
 import {Strings} from "../utils/Strings.sol";
 import {IERC165, ERC165} from "../ERC165/ERC165.sol";
