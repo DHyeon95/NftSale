@@ -4,11 +4,13 @@ pragma solidity ^0.8.7;
 import "./interfaces/IOracle.sol";
 import "./interfaces/ISBTPriceContract.sol";
 import "./access/Ownable.sol";
+import "./utils/math/Math.sol";
 
 contract SBTPriceContract is ISBTPriceContract, Ownable{
-
+    using Math for uint256;
     uint256 public SBTPrice;
     IOracle internal dataFeed;
+    uint256 constant USDCDecimals = 10 ** 6;
 
     /**
      * Network: BFC_Testnet
@@ -24,19 +26,28 @@ contract SBTPriceContract is ISBTPriceContract, Ownable{
     }
 
     // saleContract 에서 호출하기 위함
-    function getPrice() external view returns(uint256) {
+    function getSBTPriceUSDC() external view returns(uint256) {
         return SBTPrice;
     }
 
-    function getBFCUSDCRatio() external view returns (uint256){
-        int oralcePrice = getChainlinkDataFeedLatestAnswer();
+    function getSBTPriceBFC() external view returns(uint256) {
+        uint256 Ratio = _getBFCUSDCRatio();
+        uint256 price = SBTPrice;
+        price = price.mulDiv(Ratio, USDCDecimals);
+        price /= 10 ** 15;
+        price *= 10 ** 15; // check
+        return price;
+    }
+
+    function _getBFCUSDCRatio() internal view returns (uint256){
+        int oralcePrice = _getChainlinkDataFeedLatestAnswer();
         require(oralcePrice > 0, "Oracle Data Minus");
         uint256 divPrice = uint256(oralcePrice);
         uint256 ratio = 10 ** 26;
         return ratio / divPrice;
     }
 
-    function getChainlinkDataFeedLatestAnswer() internal view returns (int) {
+    function _getChainlinkDataFeedLatestAnswer() internal view returns (int) {
         (
             /* uint80 roundID */,
             int answer,
