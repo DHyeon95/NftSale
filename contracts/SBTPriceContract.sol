@@ -21,7 +21,7 @@ contract SBTPriceContract is ISBTPriceContract, Ownable{
         dataFeed = IOracle(0x18Ff9c6B6777B46Ca385fd17b3036cEb30982ea9);
     }
 
-    function setPrice(uint256 _input) external onlyOwner() {
+    function setSBTPrice(uint256 _input) external onlyOwner() {
         SBTPrice = _input;
     }
 
@@ -35,13 +35,13 @@ contract SBTPriceContract is ISBTPriceContract, Ownable{
         uint256 price = SBTPrice;
         price = price.mulDiv(Ratio, USDCDecimals);
         price /= 10 ** 15;
-        price *= 10 ** 15; // check
+        price *= 10 ** 15;
         return price;
     }
 
     function _getBFCUSDCRatio() internal view returns (uint256){
         int oralcePrice = _getChainlinkDataFeedLatestAnswer();
-        require(oralcePrice > 0, "Oracle Data Minus");
+        require(oralcePrice > 0, "Failed data integrity check");
         uint256 divPrice = uint256(oralcePrice);
         uint256 ratio = 10 ** 26;
         return ratio / divPrice;
@@ -52,9 +52,10 @@ contract SBTPriceContract is ISBTPriceContract, Ownable{
             /* uint80 roundID */,
             int answer,
             /*uint256 startedAt*/,
-            /*uint256 timeStamp*/,
+            uint256 timeStamp,
             /*uint80 answeredInRound*/
         ) = dataFeed.latestRoundData();
+        require(block.timestamp < timeStamp + 2000, "Failed data integrity check");
         return (answer);
     }
 

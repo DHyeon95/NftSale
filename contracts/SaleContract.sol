@@ -16,7 +16,7 @@ contract SaleContract is Ownable {
     constructor() Ownable(_msgSender()) {
     }
 
-     modifier checkSwitch() {
+    modifier checkSwitch() {
         require(killSwitch == false, "Contract stopped");
         _;
     }
@@ -38,19 +38,19 @@ contract SaleContract is Ownable {
         stableContract.transfer(owner(), _amount);
     }
 
-    function setPriceContract(address _contract) external onlyOwner() {
+    function setSBTPriceContract(address _contract) external onlyOwner() {
         priceContract = ISBTPriceContract(_contract);
     }
 
-    function BuySBTUSDC() external checkSwitch() {
+    function buySBTUSDC() external checkSwitch() {
         uint256 price = priceContract.getSBTPriceUSDC();
         stableContract.transferFrom(_msgSender(), address(this), price);
         tokenContract.mintSBT(_msgSender());
     }
 
-    function BuySBTBFC() external payable checkSwitch() { // BFC : native token
+    function buySBTBFC() external payable checkSwitch() { // BFC : native token
         uint256 price = priceContract.getSBTPriceBFC();
-        require(msg.value == price, "Invalid Price");
+        require(msg.value == price, "Invalid price");
         tokenContract.mintSBT(_msgSender());
     }
 

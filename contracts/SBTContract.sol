@@ -23,8 +23,4 @@ contract SBTContract is ERC5484, Ownable, ISBTContract {
         _mintSBT(to, count, BurnAuth.OwnerOnly);
     }
 
-    function burnSBT(uint256 tokenId) external {
-        _burnSBT(tokenId);
-    }
-
 }
