@@ -10,8 +10,7 @@ module.exports = {
     hardhat: {
       forking: {
         url: "https://public-01.testnet.thebifrost.io/rpc",
-        blockNumber: 11722011
-      }
-    }
-  }
+      },
+    },
+  },
 };
