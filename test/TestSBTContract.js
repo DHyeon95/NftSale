@@ -28,12 +28,14 @@ describe("SBTContract", function () {
   });
 
   describe("Set state", function () {
-    it("should fail set Seller from other", async function () {
-      await expect(tokenContract.connect(testUser).setSeller(testUser.address)
-      ).to.be.revertedWithCustomError(tokenContract, "OwnableUnauthorizedAccount");
+    it("should fail set seller from other", async function () {
+      await expect(tokenContract.connect(testUser).setSeller(testUser.address)).to.be.revertedWithCustomError(
+        tokenContract,
+        "OwnableUnauthorizedAccount",
+      );
     });
 
-    it("should set Seller from owner", async function () {
+    it("should set seller from owner", async function () {
       await tokenContract.setSeller(owner.address);
       expect(await tokenContract.seller()).to.equal(owner.address);
     });
@@ -42,10 +44,8 @@ describe("SBTContract", function () {
   describe("mintSBT", function () {
     describe("Before set seller", function () {
       it("should fail mint", async function () {
-        await expect(tokenContract.connect(testUser).mintSBT(owner.address)
-        ).to.be.revertedWith("Invalid seller");
-        await expect(tokenContract.mintSBT(owner.address)
-        ).to.be.revertedWith("Invalid seller");
+        await expect(tokenContract.connect(testUser).mintSBT(owner.address)).to.be.revertedWith("Invalid seller");
+        await expect(tokenContract.mintSBT(owner.address)).to.be.revertedWith("Invalid seller");
       });
     });
 
@@ -57,15 +57,16 @@ describe("SBTContract", function () {
       // issued, transfer 이벤트 체크
       it("should mint from seller", async function () {
         await expect(tokenContract.connect(testUser).mintSBT(testUser.address))
-          .to.emit(tokenContract, "Issued").withArgs(testUser.address, testUser.address, 1, 1)
-          .to.emit(tokenContract, "Transfer").withArgs(constants.ZERO_ADDRESS, testUser.address, 1);
+          .to.emit(tokenContract, "Issued")
+          .withArgs(testUser.address, testUser.address, 1, 1)
+          .to.emit(tokenContract, "Transfer")
+          .withArgs(constants.ZERO_ADDRESS, testUser.address, 1);
         expect(await tokenContract.balanceOf(testUser.address)).to.equal(1);
         expect(await tokenContract.ownerOf(1)).to.equal(testUser.address);
       });
 
       it("disallow mint from others", async function () {
-        await expect(tokenContract.mintSBT(owner.address)
-        ).to.be.revertedWith("Invalid seller");
+        await expect(tokenContract.mintSBT(owner.address)).to.be.revertedWith("Invalid seller");
       });
     });
   });

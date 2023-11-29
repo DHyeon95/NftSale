@@ -13,7 +13,7 @@ describe("After Contract Connect", function () {
 
     usdcContract = await ethers.getContractAt("IERC20", "0x28661511CDA7119B2185c647F23106a637CC074f");
     tokenContract = await ethers.deployContract("SBTContract", ["TokenforSale", "TfS"]);
-    priceContract = await ethers.deployContract("SBTPriceContract");
+    priceContract = await ethers.deployContract("SBTPriceContract", [1000000]);
     saleContract = await ethers.deployContract("SaleContract");
 
     await saleContract.setSBTContract(tokenContract.target);
@@ -42,6 +42,7 @@ describe("After Contract Connect", function () {
       expect(await tokenContract.seller()).to.equal(saleContract.target);
 
       expect(await priceContract.owner()).to.equal(owner.address);
+      expect(await priceContract.tokenPrice()).to.equal(1000000);
 
       expect(await saleContract.killSwitch()).to.equal(false);
       expect(await saleContract.owner()).to.equal(owner.address);
@@ -51,17 +52,6 @@ describe("After Contract Connect", function () {
 
       expect(await usdcContract.balanceOf(owner.address)).to.equal(100000000);
       expect(await usdcContract.balanceOf(testUser.address)).to.equal(100000000);
-    });
-  });
-
-  describe("Oracle Data Test", function () {
-    it("should price is zero", async function () {
-      expect(await priceContract.getSBTPriceBFC()).to.equal(0);
-    });
-
-    it("should fail verify data", async function () {
-      await helpers.time.increase(2000);
-      await expect(priceContract.getSBTPriceBFC()).to.be.revertedWith("Failed data integrity check");
     });
   });
 
@@ -77,98 +67,136 @@ describe("After Contract Connect", function () {
     });
 
     it("should fail mint before token approve", async function () {
-      await expect(saleContract.buySBTUSDC()
-      ).to.be.revertedWith("ERC20: insufficient allowance");
-      await expect(saleContract.connect(testUser).buySBTUSDC()
-      ).to.be.revertedWith("ERC20: insufficient allowance");
+      await expect(saleContract.buySBTUSDC()).to.be.revertedWith("ERC20: insufficient allowance");
+      await expect(saleContract.connect(testUser).buySBTUSDC()).to.be.revertedWith("ERC20: insufficient allowance");
     });
 
     it("should mint exact value(USDC)", async function () {
       await usdcContract.approve(saleContract.target, usdcPrice);
-      await expect(await saleContract.buySBTUSDC());
+      await saleContract.buySBTUSDC();
       expect(await tokenContract.balanceOf(owner.address)).to.equal(1);
       expect(await tokenContract.ownerOf(1)).to.equal(owner.address);
 
       await usdcContract.connect(testUser).approve(saleContract.target, usdcPrice);
-      await expect(await saleContract.connect(testUser).buySBTUSDC());
+      await saleContract.connect(testUser).buySBTUSDC();
       expect(await tokenContract.connect(testUser).balanceOf(testUser.address)).to.equal(1);
       expect(await tokenContract.connect(testUser).ownerOf(2)).to.equal(testUser.address);
     });
 
     it("should fail inexact value(BFC)", async function () {
-      const errorPrice = (await priceContract.getSBTPriceBFC()) + `3`;
-      await expect(saleContract.buySBTBFC({ value: errorPrice })
-      ).to.be.revertedWith("Invalid price");
-      await expect(saleContract.connect(testUser).buySBTBFC({ value: errorPrice })
-      ).to.be.revertedWith("Invalid price");
+      const errorPrice = bfcPrice + "3";
+      await expect(saleContract.buySBTBFC({ value: errorPrice })).to.be.revertedWith("Invalid price");
+      await expect(saleContract.connect(testUser).buySBTBFC({ value: errorPrice })).to.be.revertedWith("Invalid price");
     });
 
     it("should mint exact value(BFC)", async function () {
-      const bfcPrice = await priceContract.getSBTPriceBFC();
-
-      await expect(await saleContract.buySBTBFC({ value: bfcPrice }));
+      await saleContract.buySBTBFC({ value: bfcPrice });
       expect(await tokenContract.balanceOf(owner.address)).to.equal(1);
       expect(await tokenContract.ownerOf(1)).to.equal(owner.address);
 
-      await expect(await saleContract.connect(testUser).buySBTBFC({ value: bfcPrice }));
+      await saleContract.connect(testUser).buySBTBFC({ value: bfcPrice });
       expect(await tokenContract.connect(testUser).balanceOf(testUser.address)).to.equal(1);
       expect(await tokenContract.connect(testUser).ownerOf(2)).to.equal(testUser.address);
     });
 
     it("should emit 'Issued, Transfer' event", async () => {
       await expect(await saleContract.buySBTBFC({ value: bfcPrice }))
-        .to.emit(tokenContract, "Issued").withArgs(saleContract.target, owner.address, 1, 1)
-        .to.emit(tokenContract, "Transfer").withArgs(constants.ZERO_ADDRESS, owner.address, 1);
+        .to.emit(tokenContract, "Issued")
+        .withArgs(saleContract.target, owner.address, 1, 1)
+        .to.emit(tokenContract, "Transfer")
+        .withArgs(constants.ZERO_ADDRESS, owner.address, 1);
 
       await usdcContract.connect(testUser).approve(saleContract.target, usdcPrice);
       await expect(await saleContract.connect(testUser).buySBTUSDC())
-        .to.emit(tokenContract, "Issued").withArgs(saleContract.target, testUser.address, 2, 1)
-        .to.emit(tokenContract, "Transfer").withArgs(constants.ZERO_ADDRESS, testUser.address, 2);
+        .to.emit(tokenContract, "Issued")
+        .withArgs(saleContract.target, testUser.address, 2, 1)
+        .to.emit(tokenContract, "Transfer")
+        .withArgs(constants.ZERO_ADDRESS, testUser.address, 2);
     });
 
     it("should change BFC balance", async () => {
-      await expect(await saleContract.buySBTBFC({ value: bfcPrice })
-      ).to.changeEtherBalances([owner, saleContract], ["-" + bfcPrice, bfcPrice]);
+      await expect(await saleContract.buySBTBFC({ value: bfcPrice })).to.changeEtherBalances(
+        [owner, saleContract],
+        ["-" + bfcPrice, bfcPrice],
+      );
     });
 
     it("should change USDC balance", async () => {
       await usdcContract.approve(saleContract.target, usdcPrice);
-      await expect(await saleContract.buySBTUSDC()
-      ).to.changeTokenBalances(usdcContract, [owner, saleContract], ["-" + usdcPrice, usdcPrice]);
+      await expect(await saleContract.buySBTUSDC()).to.changeTokenBalances(
+        usdcContract,
+        [owner, saleContract],
+        ["-" + usdcPrice, usdcPrice],
+      );
     });
   });
 
   describe("Kill switch on", function () {
     before(async function () {
-      await priceContract.setSBTPrice(2000000);
-      bfcPrice = await priceContract.getSBTPriceBFC();
-      usdcPrice = await priceContract.getSBTPriceUSDC();
       await saleContract.setSwitch(true);
+    });
+
+    after(async function () {
+      await saleContract.setSwitch(false);
     });
 
     it("should fail mint", async function () {
       await usdcContract.approve(saleContract.target, usdcPrice);
-      await expect(saleContract.buySBTUSDC()
-      ).to.be.revertedWith("Contract stopped");
+      await expect(saleContract.buySBTUSDC()).to.be.revertedWith("Contract stopped");
 
       await usdcContract.connect(testUser).approve(saleContract.target, usdcPrice);
-      await expect(saleContract.connect(testUser).buySBTUSDC()
-      ).to.be.revertedWith("Contract stopped");
+      await expect(saleContract.connect(testUser).buySBTUSDC()).to.be.revertedWith("Contract stopped");
 
-      const errorPrice = (await priceContract.getSBTPriceBFC()) + `3`;
-      await expect(saleContract.buySBTBFC({ value: errorPrice })
-      ).to.be.revertedWith("Contract stopped");
-      await expect(saleContract.connect(testUser).buySBTBFC({ value: errorPrice })
-      ).to.be.revertedWith("Contract stopped");
+      const errorPrice = (await priceContract.getSBTPriceBFC()) + "3";
+      await expect(saleContract.buySBTBFC({ value: errorPrice })).to.be.revertedWith("Contract stopped");
+      await expect(saleContract.connect(testUser).buySBTBFC({ value: errorPrice })).to.be.revertedWith(
+        "Contract stopped",
+      );
 
-      await expect(saleContract.buySBTBFC({ value: bfcPrice })
-      ).to.be.revertedWith("Contract stopped");
-      await expect(saleContract.connect(testUser).buySBTBFC({ value: bfcPrice })
-      ).to.be.revertedWith("Contract stopped");
+      await expect(saleContract.buySBTBFC({ value: bfcPrice })).to.be.revertedWith("Contract stopped");
+      await expect(saleContract.connect(testUser).buySBTBFC({ value: bfcPrice })).to.be.revertedWith(
+        "Contract stopped",
+      );
     });
 
+    it("should fail withdraw", async function () {
+      await expect(saleContract.connect(testUser).withdrawUSDC(500)).to.be.revertedWith("Contract stopped");
+      await expect(saleContract.connect(testUser).withdrawBFC(500)).to.be.revertedWith("Contract stopped");
+    });
   });
 
+  describe("Withdraw asset", function () {
+    before(async function () {
+      await usdcContract.connect(testUser).approve(saleContract.target, usdcPrice);
+      await saleContract.connect(testUser).buySBTUSDC();
+      await saleContract.buySBTBFC({ value: bfcPrice });
+    });
 
-  // 출금 , 킬스위치
+    it("should withdraw from owner", async function () {
+      await expect(await saleContract.withdrawUSDC(500)).to.changeTokenBalances(
+        usdcContract,
+        [owner, saleContract],
+        [500, -500],
+      );
+      await expect(await saleContract.withdrawBFC(500)).to.changeEtherBalances([owner, saleContract], [500, -500]);
+    });
+
+    it("should fail withdraw from owner insufficient balance", async function () {
+      await expect(saleContract.withdrawUSDC(bfcPrice)).to.be.revertedWith("ERC20: transfer amount exceeds balance");
+      await expect(saleContract.withdrawBFC(bfcPrice + "0")).to.be.revertedWith(
+        "Insufficient contract balance for withdrawal",
+      );
+    });
+
+    it("should fail withdraw from other ", async function () {
+      await expect(saleContract.connect(testUser).withdrawUSDC(500)).to.be.revertedWithCustomError(
+        saleContract,
+        "OwnableUnauthorizedAccount",
+      );
+      await expect(saleContract.connect(testUser).withdrawBFC(500)).to.be.revertedWithCustomError(
+        saleContract,
+        "OwnableUnauthorizedAccount",
+      );
+    });
+  });
 });

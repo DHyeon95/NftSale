@@ -39,27 +39,44 @@ describe("SaleContract", function () {
     });
 
     it("should fail set state from other", async function () {
-      await expect(saleContract.connect(testUser).setSwitch(true)
-      ).to.be.revertedWithCustomError(saleContract, "OwnableUnauthorizedAccount");
+      await expect(saleContract.connect(testUser).setSwitch(true)).to.be.revertedWithCustomError(
+        saleContract,
+        "OwnableUnauthorizedAccount",
+      );
       expect(await saleContract.killSwitch()).to.equal(false);
 
-      await expect(saleContract.connect(testUser).setSBTContract(testUser.address)
-      ).to.be.revertedWithCustomError(saleContract, "OwnableUnauthorizedAccount");
+      await expect(saleContract.connect(testUser).setSBTContract(testUser.address)).to.be.revertedWithCustomError(
+        saleContract,
+        "OwnableUnauthorizedAccount",
+      );
       expect(await saleContract.tokenContract()).to.equal(constants.ZERO_ADDRESS);
 
-      await expect(saleContract.connect(testUser).setSBTPriceContract(testUser.address)
-      ).to.be.revertedWithCustomError(saleContract, "OwnableUnauthorizedAccount");
+      await expect(saleContract.connect(testUser).setSBTPriceContract(testUser.address)).to.be.revertedWithCustomError(
+        saleContract,
+        "OwnableUnauthorizedAccount",
+      );
       expect(await saleContract.priceContract()).to.equal(constants.ZERO_ADDRESS);
     });
   });
 
-  describe("Withdraw Asset", function () {
+  describe("Withdraw asset", function () {
     it("should fail withdraw", async function () {
-      await expect(saleContract.withdrawUSDC(100)
-      ).to.be.revertedWith("ERC20: transfer amount exceeds balance");
+      await expect(saleContract.withdrawUSDC(100)).to.be.revertedWith("ERC20: transfer amount exceeds balance");
+      await expect(saleContract.withdrawBFC(100)).to.be.revertedWith("Insufficient contract balance for withdrawal");
+    });
+  });
 
-      await expect(saleContract.withdrawBFC(100)
-      ).to.be.revertedWith("Insufficient contract balance for withdrawal");
+  describe("Mismatch contract", function () {
+    it("shoule fail buySBT", async function () {
+      await expect(saleContract.buySBTUSDC()).to.be.revertedWith("Contract not setting");
+      await expect(saleContract.buySBTBFC()).to.be.revertedWith("Contract not setting");
+    });
+
+    it("shoule fail buySBT", async function () {
+      await saleContract.setSBTContract("0xbf22b27ceC1F1c8fc04219ccCCb7ED6F6F4f8030");
+      await saleContract.setSBTPriceContract("0xbf22b27ceC1F1c8fc04219ccCCb7ED6F6F4f8030");
+      await expect(saleContract.buySBTUSDC()).to.be.reverted;
+      await expect(saleContract.buySBTBFC()).to.be.reverted;
     });
   });
 });
