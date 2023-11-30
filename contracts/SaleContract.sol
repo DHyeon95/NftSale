@@ -10,6 +10,7 @@ contract SaleContract is Ownable {
   ISBTContract public tokenContract;
   ISBTPriceContract public priceContract;
   IERC20 public constant stableContract = IERC20(0x28661511CDA7119B2185c647F23106a637CC074f);
+  uint256 public count;
   bool public killSwitch = false;
 
   modifier checkSwitch() {
@@ -29,13 +30,15 @@ contract SaleContract is Ownable {
     // BFC : native token
     uint256 price = priceContract.getSBTPriceBFC();
     require(msg.value == price, "Invalid price");
-    tokenContract.mintSBT(_msgSender());
+    count = count + 1;
+    tokenContract.mintSBT(_msgSender(), count);
   }
 
   function buySBTUSDC() external checkContract checkSwitch {
     uint256 price = priceContract.getSBTPriceUSDC();
     stableContract.transferFrom(_msgSender(), address(this), price);
-    tokenContract.mintSBT(_msgSender());
+    count = count + 1;
+    tokenContract.mintSBT(_msgSender(), count);
   }
 
   function withdrawBFC(uint256 amount) external checkSwitch onlyOwner {

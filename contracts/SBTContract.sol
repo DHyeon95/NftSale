@@ -9,7 +9,6 @@ import "./utils/math/Math.sol";
 contract SBTContract is ERC5484, Ownable, ISBTContract {
   using Math for uint256;
 
-  uint256 public count;
   address public seller;
 
   constructor(string memory name, string memory symbol) ERC721(name, symbol) Ownable(_msgSender()) {}
@@ -18,11 +17,8 @@ contract SBTContract is ERC5484, Ownable, ISBTContract {
     seller = _seller;
   }
 
-  function mintSBT(address to) external {
+  function mintSBT(address to, uint256 count) external {
     require(_msgSender() == seller, "Invalid seller");
-    (bool chkCalculation, uint256 _count) = count.tryAdd(1);
-    require(chkCalculation == true, "Calculation fail");
-    count = _count;
     _mintSBT(to, count, BurnAuth.OwnerOnly);
   }
 }
