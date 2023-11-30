@@ -22,7 +22,6 @@ describe("SBTContract", function () {
       expect(await tokenContract.symbol()).to.equal("TfS");
       expect(await tokenContract.balanceOf(owner.address)).to.equal(0);
       expect(await tokenContract.owner()).to.equal(owner.address);
-      expect(await tokenContract.count()).to.equal(0);
       expect(await tokenContract.seller()).to.equal(constants.ZERO_ADDRESS);
     });
   });
@@ -44,8 +43,8 @@ describe("SBTContract", function () {
   describe("mintSBT", function () {
     describe("Before set seller", function () {
       it("should fail mint", async function () {
-        await expect(tokenContract.connect(testUser).mintSBT(owner.address)).to.be.revertedWith("Invalid seller");
-        await expect(tokenContract.mintSBT(owner.address)).to.be.revertedWith("Invalid seller");
+        await expect(tokenContract.mintSBT(owner.address, 1)).to.be.revertedWith("Invalid seller");
+        await expect(tokenContract.connect(testUser).mintSBT(owner.address, 1)).to.be.revertedWith("Invalid seller");
       });
     });
 
@@ -54,9 +53,9 @@ describe("SBTContract", function () {
         await tokenContract.setSeller(testUser.address);
       });
 
-      // issued, transfer 이벤트 체크
+      // issued, transfer, balance, count 이벤트 체크
       it("should mint from seller", async function () {
-        await expect(tokenContract.connect(testUser).mintSBT(testUser.address))
+        await expect(tokenContract.connect(testUser).mintSBT(testUser.address, 1))
           .to.emit(tokenContract, "Issued")
           .withArgs(testUser.address, testUser.address, 1, 1)
           .to.emit(tokenContract, "Transfer")
@@ -66,7 +65,7 @@ describe("SBTContract", function () {
       });
 
       it("disallow mint from others", async function () {
-        await expect(tokenContract.mintSBT(owner.address)).to.be.revertedWith("Invalid seller");
+        await expect(tokenContract.mintSBT(owner.address, 2)).to.be.revertedWith("Invalid seller");
       });
     });
   });

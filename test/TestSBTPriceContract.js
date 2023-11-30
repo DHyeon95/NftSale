@@ -1,6 +1,7 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const helpers = require("@nomicfoundation/hardhat-toolbox/network-helpers");
+require("dotenv").config();
 
 describe("SBTPriceContract", function () {
   before(async function () {
@@ -20,6 +21,7 @@ describe("SBTPriceContract", function () {
     it("should correct initial state", async function () {
       expect(await priceContract.owner()).to.equal(owner.address);
       expect(await priceContract.tokenPrice()).to.equal(1000000);
+      expect(await priceContract.timeInterval()).to.equal(0);
     });
   });
 
@@ -33,12 +35,13 @@ describe("SBTPriceContract", function () {
 
     it("should set price from owner", async function () {
       await priceContract.setSBTPrice(100);
-      expect(await priceContract.tokenPrice()).to.equal(100);
+      expect(await priceContract.getSBTPriceUSDC()).to.equal(100);
     });
   });
 
   describe("Oracle Data Test", function () {
-    it("should verify data", async function () {
+    it("should get data", async function () {
+      await priceContract.setInterval(2000);
       expect(await priceContract.getSBTPriceBFC());
     });
 
